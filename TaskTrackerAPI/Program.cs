@@ -1,16 +1,16 @@
+using Microsoft.EntityFrameworkCore;
+using TaskTrackerAPI.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
-
-
+//Services Go Here
+builder.Services.AddDbContext<TodoDbContext>(opt =>
+    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.")));
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
+app.MapGet("/", () => "Hello World!");
 
 app.Run();
