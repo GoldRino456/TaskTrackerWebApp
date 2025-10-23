@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackerAPI", "TaskTrackerAPI\TaskTrackerAPI.csproj", "{94625B3A-8143-49E8-9457-A5115587E305}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackerApp", "TaskTrackerApp\TaskTrackerApp.csproj", "{9E6398DA-1EA8-41D5-8813-0C74FA42CC84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{94625B3A-8143-49E8-9457-A5115587E305}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94625B3A-8143-49E8-9457-A5115587E305}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94625B3A-8143-49E8-9457-A5115587E305}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E6398DA-1EA8-41D5-8813-0C74FA42CC84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E6398DA-1EA8-41D5-8813-0C74FA42CC84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E6398DA-1EA8-41D5-8813-0C74FA42CC84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E6398DA-1EA8-41D5-8813-0C74FA42CC84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
