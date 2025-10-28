@@ -2,7 +2,34 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
+<div>
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    Is Complete?
+                </th>
+                <th>
+                    Task
+                </th>
+                <th>
+                    Details
+                </th>
+                <th>
+                    Due Date
+                </th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="todoTableData"></tbody>
+    </table>
 </div>
+
+@section Scripts {
+    <script type="text/javascript">
+        getTodos();
+    </script>
+}

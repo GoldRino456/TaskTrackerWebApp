@@ -1,34 +1,39 @@
 ﻿@TaskTrackerAPI_HostAddress = https://localhost:7217
 
-POST {{TaskTrackerAPI_HostAddress}}/todoitems
+
+
+GET {{TaskTrackerAPI_HostAddress}}/api/todoitems
+
+###
+
+POST {{TaskTrackerAPI_HostAddress}}/api/todoitems
 Content-Type: application/json
 {
   "title": "Task Name",
   "description": "Super Important Task",
   "dueDate": "2025-10-23T19:25:45+00:00",
-  "isComplete": false
-}
-
-###
-
-GET {{TaskTrackerAPI_HostAddress}}/todoitems
-
-###
-
-GET {{TaskTrackerAPI_HostAddress}}/todoitems/3
-
-###
-
-PUT {{TaskTrackerAPI_HostAddress}}/todoitems/3
-Content-Type: application/json
-{
-  "title": "Replacement Task",
-  "description": "SuperER ImportantER Task",
-  "dueDate": "2025-10-23T19:25:45+00:00",
   "isComplete": true
 }
 ###
 
-DELETE {{TaskTrackerAPI_HostAddress}}/todoitems/2
+GET {{TaskTrackerAPI_HostAddress}}/api/todoitems/complete
 
+###
+
+DELETE {{TaskTrackerAPI_HostAddress}}/api/todoitems/5
+
+###
+
+GET {{TaskTrackerAPI_HostAddress}}/api/todoitems/4
+
+###
+
+PUT {{TaskTrackerAPI_HostAddress}}/api/todoitems/4
+Content-Type: application/json
+{
+  "title": "Task Name UPDATED",
+  "description": "SOMEWHAT Super Important Task",
+  "dueDate": "2025-10-23T19:25:45+00:00",
+  "isComplete": false
+}
 ###

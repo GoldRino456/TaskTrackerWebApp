@@ -4,10 +4,24 @@ using TaskTrackerAPI.Data.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+#region Service Configurations
 builder.Services.AddDbContext<TodoDbContext>(opt =>
     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.")));
+
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? throw new InvalidOperationException("Missing valid origins for front-end access."))
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+#endregion
 
 if (builder.Environment.IsDevelopment())
 {
@@ -15,8 +29,10 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+app.UseCors("CorsPolicy");
 
-var todoItems = app.MapGroup("/todoitems");
+#region /api/todoitems
+var todoItems = app.MapGroup("/api/todoitems");
 todoItems.MapGet("/", GetAllTodos);
 todoItems.MapGet("/complete", GetCompleteTodos);
 todoItems.MapGet("/{id}", GetTodo);
@@ -45,7 +61,7 @@ static async Task<IResult> CreateTodo(Todo todo, TodoDbContext db)
 {
     db.TodoList.Add(todo);
     await db.SaveChangesAsync();
-    return TypedResults.Created($"/todoitems/{todo.Id}", todo);
+    return TypedResults.Created($"/api/todoitems/{todo.Id}", todo);
 }
 
 static async Task<IResult> UpdateTodo(int id, Todo inputTodo, TodoDbContext db)
@@ -76,3 +92,4 @@ static async Task<IResult> DeleteTodo(int id, TodoDbContext db)
 
     return TypedResults.NotFound();
 }
+#endregion
