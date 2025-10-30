@@ -1,11 +1,102 @@
 ﻿const uri = 'https://localhost:7217/api/todoitems';
 let todoListDisplay = [];
 
+const createBtn = document.getElementById('createBtn');
+createBtn.addEventListener('click', createRow);
+let showCreateRow = false;
+
 function getTodos() {
     fetch(uri)
         .then(response => response.json())
         .then(data => _displayTodoData(data))
         .catch(error => console.error('Unable to get Todo list.', error));
+}
+
+function createRow() {
+    if (showCreateRow) return;
+
+    const tBody = document.getElementById('todoTableData');
+
+    const tr = tBody.insertRow(0);
+    tr.dataset.new = 'true';
+    tr.dataset.editing = 'true';
+
+    const td1 = tr.insertCell(0);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.disabled = false;
+    checkbox.checked = false;
+    td1.appendChild(checkbox);
+
+    const td2 = tr.insertCell(1);
+    td2.innerHTML = `<input type="text" class="edit-title" value="">`;
+
+    const td3 = tr.insertCell(2);
+    td3.innerHTML = `<input type="text" class="edit-desc" value="">`;
+
+    const td4 = tr.insertCell(3);
+    td4.innerHTML = `<input type="date" class="edit-date" value="">`;
+
+    const td5 = tr.insertCell(4);
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    td5.appendChild(saveBtn);
+
+    const td6 = tr.insertCell(5);
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    td6.appendChild(cancelBtn);
+
+    saveBtn.addEventListener('click', () => saveNewRow(tr));
+    cancelBtn.addEventListener('click', () => cancelNewRow(tr));
+
+    showCreateRow = true;
+    createBtn.disabled = true;
+}
+
+async function saveNewRow(row) {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const titleInput = row.querySelector('.edit-title');
+    const descInput = row.querySelector('.edit-desc');
+    const dateInput = row.querySelector('.edit-date');
+
+    const newEntry = {
+        isComplete: checkbox.checked,
+        title: titleInput.value.trim(),
+        description: descInput.value.trim(),
+        dueDate: new Date(dateInput.value).toISOString()
+    }
+
+    //TODO: Insert Validation Here
+
+    const resp = await fetch(`${uri}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEntry)
+    })
+        .catch(error => console.error('Unable to add item.', error));
+
+    if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`Server error ${resp.status}: ${txt}`);
+    }
+
+    const created = await resp.json();
+    row.dataset.id = created.id;
+
+    todoListDisplay.unshift(created);
+    _displayTodoData(todoListDisplay);
+
+    showCreateRow = false;
+    createBtn.disabled = false;
+}
+
+function cancelNewRow(row) {
+    row.remove();
+    showCreateRow = false;
+    createBtn.disabled = false;
 }
 
 function _displayTodoData(data) {
@@ -129,6 +220,8 @@ function saveEdit(row) {
         dueDate: new Date(dateInput.value).toISOString()
     }
 
+    //TODO: Insert Validation Here
+
     //Update model
     todoListDisplay[idx] = {
         ...todoListDisplay[idx],
@@ -202,7 +295,7 @@ function deleteRow(row) {
     const idx = +row.dataset.index;
     const item = todoListDisplay[idx];
 
-    fetch(`${uri}/${id}`, {
+    fetch(`${uri}/${row.dataset.id}`, {
         method: 'DELETE'
     })
         .then(() => getTodos())

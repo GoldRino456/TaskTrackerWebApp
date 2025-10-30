@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackerAPI", "TaskTrackerAPI\TaskTrackerAPI.csproj", "{94625B3A-8143-49E8-9457-A5115587E305}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskTrackerApp", "TaskTrackerApp\TaskTrackerApp.csproj", "{9E6398DA-1EA8-41D5-8813-0C74FA42CC84}"
+	ProjectSection(ProjectDependencies) = postProject
+		{94625B3A-8143-49E8-9457-A5115587E305} = {94625B3A-8143-49E8-9457-A5115587E305}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
