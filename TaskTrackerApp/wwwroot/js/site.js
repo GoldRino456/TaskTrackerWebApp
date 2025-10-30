@@ -291,15 +291,38 @@ function restoreRowUI(row, item) {
     tdDeleteBtn.appendChild(deleteBtn);
 }
 
-function deleteRow(row) {
+async function deleteRow(row) {
+    const confirmDelete = await displayConfirmModal({
+        title: 'Delete Task?',
+        message: 'Are you sure you wish to delete this task? This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+    });
+
+    if (!confirmDelete) {
+        console.log('User cancelled.');
+        return;
+    }
+
+
     const idx = +row.dataset.index;
     const item = todoListDisplay[idx];
 
-    fetch(`${uri}/${row.dataset.id}`, {
-        method: 'DELETE'
-    })
-        .then(() => getTodos())
-        .catch(error => console.error('Unable to delete item.', error));
+    try {
+        const response = await fetch(`${uri}/${row.dataset.id}`, { method: 'DELETE' });
+
+        if (response.status === 204) {
+            displayToastMessage(`Task successfully deleted.`, { type: 'success' });
+        }
+        else {
+            displayToastMessage(`Could not delete task.`, { type: 'error' });
+        }
+
+        await getTodos(); 
+    }
+    catch (error) {
+        displayToastMessage(`Could not delete item from Database: ${error}`, { type: 'error' });
+    }
 }
 
 function escapeHtml(str) {
@@ -325,4 +348,90 @@ function formatDateAsStr(dateStr) {
     const da = String(d.getDate()).padStart(2, '0');
 
     return `${y}-${m}-${da}`;
+}
+
+function displayToastMessage(message, options = {}) {
+    //options: type ('success'|'error'|'info'|'warning'), autohide (bool), delay (ms)
+
+    const type = options.type || 'info';
+    const autohide = options.autohide !== undefined ? options.autohide : true;
+    const delay = options.delay || 3000;
+
+    const container = document.getElementById('toastContainer');
+    if (!container) {
+        console.warn('No toast container found on page (id="toastContainer"). Toast was not displayed!');
+        return;
+    }
+
+    const toastElement = document.createElement('div');
+    toastElement.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : (type === 'info' ? 'info' : (type === 'warning' ? 'warning' : 'success'))} border-0`;
+    toastElement.setAttribute('role', 'status');
+    toastElement.setAttribute('aria-live', 'polite');
+    toastElement.setAttribute('aria-atomic', 'true');
+
+    toastElement.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${escapeHtml(message)}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>`;
+
+    container.appendChild(toastElement);
+
+    const toast = bootstrap.Toast.getOrCreateInstance(toastElement, {
+        autohide: autohide,
+        delay: delay
+    });
+
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+
+    toast.show();
+}
+
+function displayConfirmModal({ title = 'Confirm', message = 'Are you sure?', confirmText = 'Confirm', cancelText = 'Cancel', size = '' } = {}) {
+    return new Promise((resolve) => {
+        const modalElement = document.getElementById('confirmModal');
+        const modalLabel = modalElement.querySelector('#confirmModalLabel');
+        const modalBody = modalElement.querySelector('#confirmModalBody');
+        const modalConfirmBtn = modalElement.querySelector('#confirmModalConfirm');
+        const modalCancelBtn = modalElement.querySelector('#confirmModalCancel');
+
+        modalLabel.textContent = title;
+        modalBody.textContent = message;
+        modalConfirmBtn.textContent = confirmText;
+        modalCancelBtn.textContent = cancelText;
+
+        const dialog = modalElement.querySelector('.modal-dialog');
+        dialog.classList.remove('modal-sm', 'modal-lg', 'modal-xl');
+        if (size === 'sm') dialog.classList.add('modal-sm');
+        if (size === 'lg') dialog.classList.add('modal-lg');
+        if (size === 'xl') dialog.classList.add('modal-xl');
+
+        const bsModal = new bootstrap.Modal(modalElement, {
+            backdrop: 'static',
+            keyboard: true
+        });
+
+        const cleanup = (result) => {
+            modalConfirmBtn.removeEventListener('click', onConfirm);
+            modalCancelBtn.removeEventListener('click', onCancel);
+            modalElement.removeEventListener('hidden.bs.modal', onHidden);
+            resolve(result);
+            try { bsModal.hide(); } catch (e) { }
+        };
+
+        const onConfirm = (ev) => { ev.preventDefault(); cleanup(true); };
+        const onCancel = (ev) => { ev.preventDefault(); cleanup(false); };
+
+        const onHidden = (ev) => { cleanup(false); };
+
+        modalConfirmBtn.addEventListener('click', onConfirm);
+        modalCancelBtn.addEventListener('click', onCancel);
+        modalElement.addEventListener('hidden.bs.modal', onHidden, { once: true });
+
+        bsModal.show();
+
+        modalCancelBtn.focus();
+    });
 }
