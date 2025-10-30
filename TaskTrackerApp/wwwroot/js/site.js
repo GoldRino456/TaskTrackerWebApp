@@ -69,25 +69,28 @@ async function saveNewRow(row) {
 
     //TODO: Insert Validation Here
 
-    const resp = await fetch(`${uri}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newEntry)
-    })
-        .catch(error => console.error('Unable to add item.', error));
+    try {
+        const resp = await fetch(`${uri}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newEntry)
+        });
 
-    if (!resp.ok) {
-        const txt = await resp.text();
-        throw new Error(`Server error ${resp.status}: ${txt}`);
+        const created = await resp.json();
+        row.dataset.id = created.id;
+
+        if (resp.ok) {
+            displayToastMessage(`Task added successfully!`, { type: 'success' });
+        }
+
+        todoListDisplay.unshift(created);
+        _displayTodoData(todoListDisplay);
     }
-
-    const created = await resp.json();
-    row.dataset.id = created.id;
-
-    todoListDisplay.unshift(created);
-    _displayTodoData(todoListDisplay);
+    catch (error) {
+        displayToastMessage(`Could not add item to Database: ${error}`, { type: 'error' });
+    }
 
     showCreateRow = false;
     createBtn.disabled = false;
@@ -154,6 +157,7 @@ function _displayTodoData(data) {
 
 function startEdit(row) {
     if (row.dataset.editing === 'true') return; //Do nothing if already in edit mode
+    const warningToast = displayToastMessage(`Changes have not yet been saved!`, { type: 'info', autohide: false });
 
     const idx = +row.dataset.index;
     const item = todoListDisplay[idx];
@@ -195,13 +199,27 @@ function startEdit(row) {
     tdDeleteBtn.appendChild(cancelBtn);
 
     //Listeners
-    saveBtn.addEventListener('click', () => saveEdit(row));
-    cancelBtn.addEventListener('click', () => cancelEdit(row));
+    saveBtn.addEventListener('click', () => saveEdit(row, warningToast));
+    cancelBtn.addEventListener('click', () => cancelEdit(row, warningToast));
 
     row.dataset.editing = 'true';
 }
 
-function saveEdit(row) {
+async function saveEdit(row, warningToast) {
+    const confirmChanges = await displayConfirmModal({
+        title: 'Save Changes?',
+        message: 'Are you sure you wish to update this task?',
+        confirmText: 'Save Changes',
+        cancelText: 'Cancel'
+    });
+
+    if (!confirmChanges) {
+        console.log('User cancelled.');
+        return;
+    }
+
+    warningToast.hide();
+
     const idx = +row.dataset.index;
     const tdCheckbox = row.cells[0];
     const tdTitle = row.cells[1];
@@ -222,35 +240,44 @@ function saveEdit(row) {
 
     //TODO: Insert Validation Here
 
-    //Update model
     todoListDisplay[idx] = {
         ...todoListDisplay[idx],
         ...updatedEntry
     }
 
-    //Call API Here
-    fetch(`${uri}/${row.dataset.id}`,
-        {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(updatedEntry)
-        })
-        .catch(error => console.error('Unable to update item.', error));
+    try {
+        const response = await fetch(`${uri}/${row.dataset.id}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedEntry)
+            })
+        if (response.status === 204) {
+            displayToastMessage(`Task successfully updated.`, { type: 'success' });
+        }
+        else {
+            displayToastMessage(`Could not update task.`, { type: 'error' });
+        }
+    }
+    catch (error) {
+        displayToastMessage(`Could not update item in Database: ${error}`, { type: 'error' });
+    }
 
-    //Restore UI to non-editable
     restoreRowUI(row, todoListDisplay[idx]);
     row.dataset.editing = 'false';
 }
 
-function cancelEdit(row) {
+function cancelEdit(row, warningToast) {
     const originalEntry = {
         isComplete: row.dataset.currentIsComplete === 'true',
         title: row.dataset.currentTitle,
         description: row.dataset.currentDesc,
         dueDate: row.dataset.currentDueDate
     };
+
+    warningToast.hide();
 
     restoreRowUI(row, originalEntry);
 
@@ -387,6 +414,7 @@ function displayToastMessage(message, options = {}) {
     });
 
     toast.show();
+    return toast;
 }
 
 function displayConfirmModal({ title = 'Confirm', message = 'Are you sure?', confirmText = 'Confirm', cancelText = 'Cancel', size = '' } = {}) {
