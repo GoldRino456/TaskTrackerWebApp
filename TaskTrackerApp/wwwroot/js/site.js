@@ -50,11 +50,13 @@ function createRow() {
     const td5 = tr.insertCell(4);
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save';
+    saveBtn.className = 'save-btn';
     td5.appendChild(saveBtn);
 
     const td6 = tr.insertCell(5);
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
+    cancelBtn.className = 'cancel-btn';
     td6.appendChild(cancelBtn);
 
     saveBtn.addEventListener('click', () => saveNewRow(tr));
