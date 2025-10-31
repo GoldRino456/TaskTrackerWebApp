@@ -12,8 +12,18 @@ function getTodos() {
         .catch(error => console.error('Unable to get Todo list.', error));
 }
 
+function hideCreateBtn(bool) {
+    createBtn.disabled = bool;
+}
+
 function createRow() {
     if (showCreateRow) return;
+
+    //Lock all tasks
+    const otherRows = Array.from(document.querySelectorAll('#todoTableData tr'));
+    otherRows.forEach(r => {
+        r.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => btn.disabled = true);
+    });
 
     const tBody = document.getElementById('todoTableData');
 
@@ -51,7 +61,7 @@ function createRow() {
     cancelBtn.addEventListener('click', () => cancelNewRow(tr));
 
     showCreateRow = true;
-    createBtn.disabled = true;
+    hideCreateBtn(true);
 }
 
 async function saveNewRow(row) {
@@ -93,13 +103,25 @@ async function saveNewRow(row) {
     }
 
     showCreateRow = false;
-    createBtn.disabled = false;
+    hideCreateBtn(false);
+
+    //Unlock all tasks
+    const otherRows = Array.from(document.querySelectorAll('#todoTableData tr'));
+    otherRows.forEach(r => {
+        r.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => btn.disabled = false);
+    });
 }
 
 function cancelNewRow(row) {
     row.remove();
     showCreateRow = false;
-    createBtn.disabled = false;
+    hideCreateBtn(false);
+
+    //Unlock all tasks
+    const otherRows = Array.from(document.querySelectorAll('#todoTableData tr'));
+    otherRows.forEach(r => {
+        r.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => btn.disabled = false);
+    });
 }
 
 function _displayTodoData(data) {
@@ -158,9 +180,16 @@ function _displayTodoData(data) {
 function startEdit(row) {
     if (row.dataset.editing === 'true') return; //Do nothing if already in edit mode
     const warningToast = displayToastMessage(`Changes have not yet been saved!`, { type: 'info', autohide: false });
+    hideCreateBtn(true);
 
     const idx = +row.dataset.index;
     const item = todoListDisplay[idx];
+
+    //Lock all other tasks
+    const otherRows = Array.from(document.querySelectorAll('#todoTableData tr')).filter(r => r !== row);
+    otherRows.forEach(r => {
+        r.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => btn.disabled = true);
+    });
 
     //Store Original Data
     row.dataset.currentTitle = item.title ?? '';
@@ -267,6 +296,7 @@ async function saveEdit(row, warningToast) {
 
     restoreRowUI(row, todoListDisplay[idx]);
     row.dataset.editing = 'false';
+    hideCreateBtn(false);
 }
 
 function cancelEdit(row, warningToast) {
@@ -280,11 +310,17 @@ function cancelEdit(row, warningToast) {
     warningToast.hide();
 
     restoreRowUI(row, originalEntry);
-
     row.dataset.editing = 'false';
+    hideCreateBtn(false);
 }
 
 function restoreRowUI(row, item) {
+
+    //Unlock all other tasks
+    const otherRows = Array.from(document.querySelectorAll('#todoTableData tr')).filter(r => r !== row);
+    otherRows.forEach(r => {
+        r.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => btn.disabled = false);
+    });
 
     const tdCheckbox = row.cells[0];
     const tdTitle = row.cells[1];
