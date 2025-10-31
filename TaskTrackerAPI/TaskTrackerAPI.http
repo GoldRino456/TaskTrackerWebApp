@@ -10,8 +10,8 @@ POST {{TaskTrackerAPI_HostAddress}}/api/todoitems
 Content-Type: application/json
 {
   "title": "Task Name",
-  "description": "Super Important Task",
-  "dueDate": "2025-10-23T19:25:45+00:00",
+  "description": null,
+  "dueDate": null,
   "isComplete": true
 }
 ###

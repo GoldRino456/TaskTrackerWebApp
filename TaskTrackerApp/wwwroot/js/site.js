@@ -39,10 +39,10 @@ function createRow() {
     td1.appendChild(checkbox);
 
     const td2 = tr.insertCell(1);
-    td2.innerHTML = `<input type="text" class="edit-title" value="">`;
+    td2.innerHTML = `<input type="text" class="edit-title" required minlength="1" maxlength="200" value="">`;
 
     const td3 = tr.insertCell(2);
-    td3.innerHTML = `<input type="text" class="edit-desc" value="">`;
+    td3.innerHTML = `<input type="text" class="edit-desc" maxlength="1000" value="">`;
 
     const td4 = tr.insertCell(3);
     td4.innerHTML = `<input type="date" class="edit-date" value="">`;
@@ -62,6 +62,8 @@ function createRow() {
 
     showCreateRow = true;
     hideCreateBtn(true);
+
+    titleInput.focus();
 }
 
 async function saveNewRow(row) {
@@ -70,14 +72,38 @@ async function saveNewRow(row) {
     const descInput = row.querySelector('.edit-desc');
     const dateInput = row.querySelector('.edit-date');
 
-    const newEntry = {
-        isComplete: checkbox.checked,
-        title: titleInput.value.trim(),
-        description: descInput.value.trim(),
-        dueDate: new Date(dateInput.value).toISOString()
+    const title = titleInput.value.trim();
+    if (!title) { 
+        displayToastMessage('Title is required.', { type: 'error' });
+        titleInput.focus();
+        return;
+    }
+    if (title.length > 200) {
+        displayToastMessage('Title must be 200 characters or fewer.', { type: 'error' });
+        titleInput.focus();
+        return;
     }
 
-    //TODO: Insert Validation Here
+    const description = (descInput && descInput.value.trim()) ? descInput.value.trim() : null;
+
+    let dueDate = null;
+    if (dateInput && dateInput.value) {
+        const parsed = new Date(dateInput.value);
+        if (Number.isNaN(parsed.getTime())) {
+            displayToastMessage('Please enter a valid date.', { type: 'error' });
+            dateInput.focus();
+            return;
+        }
+        
+        dueDate = formatDateAsUtcIsoStr(dateInput.value);
+    }
+
+    const newEntry = {
+        isComplete: checkbox.checked,
+        title: title,
+        description: description,
+        dueDate: dueDate
+    }
 
     try {
         const resp = await fetch(`${uri}`, {
@@ -161,7 +187,7 @@ function _displayTodoData(data) {
         td3.textContent = item.description ?? '';
 
         let td4 = tr.insertCell(3);
-        td4.textContent = formatDateAsStr(item.dueDate) ?? '';
+        td4.textContent = formatDateAsDisplayStr(item.dueDate) ?? '';
 
         let td5 = tr.insertCell(4);
         td5.appendChild(editButton);
@@ -210,7 +236,7 @@ function startEdit(row) {
 
     tdTitle.innerHTML = `<input type="text" class="edit-title" value="${escapeHtml(row.dataset.currentTitle)}">`;
     tdDesc.innerHTML = `<input type="text" class="edit-desc" value="${escapeHtml(row.dataset.currentDesc)}">`;
-    tdDate.innerHTML = `<input type="date" class="edit-date" value="${formatDateAsStr(row.dataset.currentDueDate)}">`;
+    tdDate.innerHTML = `<input type="date" class="edit-date" value="${formatDateAsDisplayStr(row.dataset.currentDueDate)}">`;
 
     //Replace Buttons
     tdEditBtn.innerHTML = '';
@@ -235,6 +261,50 @@ function startEdit(row) {
 }
 
 async function saveEdit(row, warningToast) {
+    const idx = +row.dataset.index;
+    const tdCheckbox = row.cells[0];
+    const tdTitle = row.cells[1];
+    const tdDesc = row.cells[2];
+    const tdDate = row.cells[3];
+
+    const checkbox = tdCheckbox.querySelector('input[type="checkbox"]');
+    const titleInput = tdTitle.querySelector('.edit-title');
+    const descInput = tdDesc.querySelector('.edit-desc');
+    const dateInput = tdDate.querySelector('.edit-date');
+
+    const title = titleInput.value.trim();
+    if (!title) {
+        displayToastMessage('Title is required.', { type: 'error' });
+        titleInput.focus();
+        return;
+    }
+    if (title.length > 200) {
+        displayToastMessage('Title must be 200 characters or fewer.', { type: 'error' });
+        titleInput.focus();
+        return;
+    }
+
+    const description = (descInput && descInput.value.trim()) ? descInput.value.trim() : null;
+
+    let dueDate = null;
+    if (dateInput && dateInput.value) {
+        const parsed = new Date(dateInput.value);
+        if (Number.isNaN(parsed.getTime())) {
+            displayToastMessage('Please enter a valid date.', { type: 'error' });
+            dateInput.focus();
+            return;
+        }
+
+        dueDate = formatDateAsUtcIsoStr(dateInput.value);
+    }
+
+    const updatedEntry = {
+        isComplete: checkbox.checked,
+        title: title,
+        description: description,
+        dueDate: dueDate
+    }
+
     const confirmChanges = await displayConfirmModal({
         title: 'Save Changes?',
         message: 'Are you sure you wish to update this task?',
@@ -248,26 +318,6 @@ async function saveEdit(row, warningToast) {
     }
 
     warningToast.hide();
-
-    const idx = +row.dataset.index;
-    const tdCheckbox = row.cells[0];
-    const tdTitle = row.cells[1];
-    const tdDesc = row.cells[2];
-    const tdDate = row.cells[3];
-
-    const checkbox = tdCheckbox.querySelector('input[type="checkbox"]');
-    const titleInput = tdTitle.querySelector('.edit-title');
-    const descInput = tdDesc.querySelector('.edit-desc');
-    const dateInput = tdDate.querySelector('.edit-date');
-
-    const updatedEntry = {
-        isComplete: checkbox.checked,
-        title: titleInput.value.trim(),
-        description: descInput.value.trim(),
-        dueDate: new Date(dateInput.value).toISOString()
-    }
-
-    //TODO: Insert Validation Here
 
     todoListDisplay[idx] = {
         ...todoListDisplay[idx],
@@ -316,7 +366,6 @@ function cancelEdit(row, warningToast) {
 
 function restoreRowUI(row, item) {
 
-    //Unlock all other tasks
     const otherRows = Array.from(document.querySelectorAll('#todoTableData tr')).filter(r => r !== row);
     otherRows.forEach(r => {
         r.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => btn.disabled = false);
@@ -335,7 +384,7 @@ function restoreRowUI(row, item) {
 
     tdTitle.textContent = item.title ?? '';
     tdDesc.textContent = item.description ?? '';
-    tdDate.textContent = formatDateAsStr(item.dueDate) ?? '';
+    tdDate.textContent = formatDateAsDisplayStr(item.dueDate) ?? '';
 
     tdEditBtn.innerHTML = '';
     tdDeleteBtn.innerHTML = '';
@@ -399,18 +448,24 @@ function escapeHtml(str) {
         .replaceAll("'", '&#39;');
 }
 
-function formatDateAsStr(dateStr) {
+function formatDateAsDisplayStr(dateStr) {
     if (!dateStr) return '';
 
     const d = new Date(dateStr);
 
     if (isNaN(d)) return '';
 
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const da = String(d.getDate()).padStart(2, '0');
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const da = String(d.getUTCDate()).padStart(2, '0');
 
     return `${y}-${m}-${da}`;
+}
+
+function formatDateAsUtcIsoStr(dateOnlyStr) {
+    if (!dateOnlyStr) return null;
+    const [y, m, d] = dateOnlyStr.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toISOString();
 }
 
 function displayToastMessage(message, options = {}) {
